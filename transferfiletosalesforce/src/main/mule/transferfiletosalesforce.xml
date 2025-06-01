@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd">
+	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="bfd885a4-2ac9-4f26-91a4-e21b0ded14b8" >
+		<sftp:connection host="localhost" username="tester" password="password" workingDir="/">
+			<sftp:preferred-authentication-methods />
+		</sftp:connection>
+	</sftp:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="ba02d111-eb86-4677-9f77-884c5f39b6ed" >
+		<salesforce:basic-connection username="madarasenevirathna98@gmail.com" password="Level1@2020" securityToken="eVtHTii9HAVpx2PkAEjxJFOKB" url="https://login.salesforce.com/services/Soap/u/53.0" />
+	</salesforce:sfdc-config>
+	<flow name="transferfiletosalesforceFlow1" doc:id="7d3d95f8-0a85-4b9e-9d72-fda5fc6df933" >
+		<sftp:listener doc:name="On New or Updated File" doc:id="19702744-fcb6-4a29-97a2-98f47683bdf8" config-ref="SFTP_Config" directory="/Mule" recursive="false">
+			<scheduling-strategy >
+				<fixed-frequency timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</sftp:listener>
+		<logger level="INFO" doc:name="Get File Name " doc:id="b2d22683-0c6e-419d-a695-406d33be4eea" message="#['file Name' : attributes.fileName]"/>
+		<logger level="INFO" doc:name="Get Payload" doc:id="6dc895f6-1f1d-424e-9f08-9154e3708150" message="#[output application/json&#10;---&#10;&#10;payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="ea52175a-cc60-4172-aa9e-35bd7fb9751d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map (record) -> {
+    Name: record.Name,
+    Phone: record.Phone,
+    Type: record.Type
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Get Payload" doc:id="4ec20788-9060-4b83-8df8-7d405443b8d0" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  message: "After Transform message",&#10;  data: payload&#10;}]'/>
+		<salesforce:create doc:name="Create" doc:id="ce0353c1-a677-4735-abb4-fe889141cc73" config-ref="Salesforce_Config" type="Account"/>
+	</flow>
+</mule>
